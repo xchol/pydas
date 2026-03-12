@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-class SimpleBuilding:
+class RCBuilding:
     def __init__(self, thermal_conductance, thermal_capacitance, RC_type):
         self.thermal_conductance = thermal_conductance
         self.thermal_capacitance = thermal_capacitance
@@ -30,14 +30,14 @@ class SupplyController:
     def __init__(self, maximum_heating_power):
         self.maximum_heating_power = maximum_heating_power
 
-    def setpoint_schedule(self, building: SimpleBuilding, time_of_day: float) -> float:
-        is_below_setpoint = (building.indoor_temperature <= building.setpoint_temperature_callback(time_of_day = time_of_day))
+    def setpoint_schedule(self, rcbuilding: RCBuilding, time_of_day: float) -> float:
+        is_below_setpoint = (rcbuilding.indoor_temperature <= rcbuilding.setpoint_temperature_callback(time_of_day = time_of_day))
         return self.maximum_heating_power if is_below_setpoint else 0.0
 
 
 class BuildingEnergySimulator:
     def __init__(self, timestep: float):
-        self.building = None
+        self.rcbuilding = None
         self.controller = None
         self.outdoor_temperature_data = None
         self.timestep = timestep
@@ -46,8 +46,8 @@ class BuildingEnergySimulator:
     def add_controller(self, controller: SupplyController) -> None:
         self.controller = controller
 
-    def add_building(self, building: SimpleBuilding) -> None:
-        self.building = building
+    def add_rcbuilding(self, rcbuilding: RCBuilding) -> None:
+        self.rcbuilding = rcbuilding
     
     def load_outdoor_temperature_data(self, path_to_file: string) -> None:
         with open(path_to_file, encoding = "utf-8") as file:
@@ -63,6 +63,6 @@ class BuildingEnergySimulator:
     def step(self) -> None:
         current_outdoor_temperature = self.outdoor_temperature_data["Lufttemperatur"][self.current_time_step]
         time_of_day = self.outdoor_temperature_data["timestamp"].dt.hour[self.current_time_step]
-        current_heating_power = self.controller.setpoint_schedule(building = self.building, time_of_day = time_of_day)
-        self.building.update_building_temperature(self.timestep, current_heating_power, current_outdoor_temperature)
+        current_heating_power = self.controller.setpoint_schedule(rcbuilding = self.rcbuilding, time_of_day = time_of_day)
+        self.rcbuilding.update_building_temperature(self.timestep, current_heating_power, current_outdoor_temperature)
         self.current_time_step += 1
