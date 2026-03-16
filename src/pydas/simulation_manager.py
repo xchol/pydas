@@ -27,8 +27,8 @@ class RCBuilding1R1C(RCBuilding):
 
     def update_rcbuilding_temperature(self, timestep: float, current_external_heating: float, current_outdoor_temperature: float) -> None:
         euler_step = timestep / self.parameters["thermal_capacitance"]
-        delta_T = self.indoor_temperature - current_outdoor_temperature
-        self.indoor_temperature += euler_step * (current_external_heating - self.parameters["thermal_conductance"] * delta_T)
+        delta_T = self.state["indoor_temperature"] - current_outdoor_temperature
+        self.state["indoor_temperature"] += euler_step * (current_external_heating - self.parameters["thermal_conductance"] * delta_T)
     
 
 class RCBuilding2R2C(RCBuilding):
