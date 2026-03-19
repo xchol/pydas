@@ -119,17 +119,6 @@ class BuildingEnergySimulator:
     def add_rcbuilding(self, rcbuilding: RCBuilding) -> None:
         self.rcbuilding = rcbuilding
     
-    def load_outdoor_temperature_data(self, path_to_file: string) -> None:
-        with open(path_to_file, encoding = "utf-8") as file:
-            for index, line in enumerate(file):
-                if line.startswith("Datum"):
-                    header_row = index
-                    break
-
-        dataframe = pd.read_csv(path_to_file, sep=";", skiprows = header_row)
-        dataframe["timestamp"] = pd.to_datetime(dataframe["Datum"] + " " + dataframe["Tid (UTC)"])
-        self.outdoor_temperature_data = dataframe
-    
     def get_outdoor_temperature(self) -> float:
         return self.outdoor_temperature_data["Lufttemperatur"][self.current_time_step]
 
@@ -141,12 +130,12 @@ class BuildingEnergySimulator:
         current_supply_temperature = self.controller.supply_temperature_schedule(rcbuilding = self.rcbuilding, time_of_day = self.get_current_hour_of_day())
         return self.rcbuilding.parameters["mass_flow"] * CP_WATER * (current_supply_temperature - current_indoor_temperature)
 
-    def step(self) -> None: # TODO: Implement multiple building using an array with for-looping! 
-        current_heating_power = self.controller.setpoint_schedule(rcbuilding = self.rcbuilding, time_of_day = self.get_current_hour_of_day())
-        self.rcbuilding.update_rcbuilding_temperature(timestep = self.timestep, current_external_heating = current_heating_power, current_outdoor_temperature = self.get_outdoor_temperature())
-        self.current_time_step += 1
+    #def step(self) -> None: # TODO: Implement multiple building using an array with for-looping! 
+    #    current_heating_power = self.controller.setpoint_schedule(rcbuilding = self.rcbuilding, time_of_day = self.get_current_hour_of_day())
+    #    self.rcbuilding.update_rcbuilding_temperature(timestep = self.timestep, current_external_heating = current_heating_power, current_outdoor_temperature = self.get_outdoor_temperature())
+    #    self.current_time_step += 1
 
-    def step_ST(self) -> None: # TODO: Implement multiple building using an array with for-looping! 
-        current_supply_temperature = self.controller.supply_temperature_schedule(rcbuilding = self.rcbuilding, time_of_day = self.get_current_hour_of_day())
-        self.rcbuilding.update_rcbuilding_temperature(timestep = self.timestep, current_supply_temperature = current_supply_temperature, current_outdoor_temperature = self.get_outdoor_temperature())
-        self.current_time_step += 1
+    #def step_ST(self) -> None: # TODO: Implement multiple building using an array with for-looping! 
+    #    current_supply_temperature = self.controller.supply_temperature_schedule(rcbuilding = self.rcbuilding, time_of_day = self.get_current_hour_of_day())
+    #    self.rcbuilding.update_rcbuilding_temperature(timestep = self.timestep, current_supply_temperature = current_supply_temperature, current_outdoor_temperature = self.get_outdoor_temperature())
+    #    self.current_time_step += 1
