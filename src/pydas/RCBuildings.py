@@ -43,30 +43,24 @@ class RCBuilding1R1C(RCBuilding):
     
 
 class RCBuilding2R2C(RCBuilding):
-    def __init__(self, parameters):
-        super().__init__(parameters)
-        self.wall_temperature = 20.0 # Degree Celsius.
-        self.state = {"indoor_temperature": self.indoor_temperature, "wall_temperature": self.wall_temperature}
-        G_a, G_w = self.parameters["thermal_conductance_air"], self.parameters["thermal_conductance_wall"]
-        k_a, k_w = self.parameters["thermal_capacitance_air"], self.parameters["thermal_capacitance_wall"]
-        self.system_matrix = np.array([
-            [-G_a / k_a, G_a / k_a],
-            [G_a / k_w, -(G_a + G_w) / k_w]
-        ])
+    def __init__(self, thermal_resistances, thermal_capacitances, timestep):
+        super().__init__(thermal_resistances, thermal_capacitances, timestep)
+        self.state = {"indoor_temperature": self.indoor_temperature, "T2": 20.0} # Initial conditions for the two states of the model.
+        self.R1C1_inv = 1.0 / (self.thermal_resistances["R1"] * self.thermal_capacitances["C1"]) 
+        self.R1C2_inv = 1.0 / (self.thermal_resistances["R1"] * self.thermal_capacitances["C2"])
+        self.R2C2_inv = 1.0 / (self.thermal_resistances["R2"] * self.thermal_capacitances["C2"])
+        self.system_matrix = np.array([[-self.R1C1_inv, self.R1C1_inv], [self.R1C2_inv, -(self.R1C2_inv + self.R2C2_inv)]])
         self.system_matrix_inv = np.linalg.inv(self.system_matrix)
-        self.input_matrix = np.array([
-            [1.0 / k_a, 0.0],
-            [0.0, G_w / k_w]
-        ])
+        self.input_matrix = np.array([[0.0, 1.0 / self.thermal_capacitances["C1"]],[self.R2C2_inv, 0.0]])
     
-    def update_rcbuilding_temperature(self, timestep: float, current_external_heating: float, current_outdoor_temperature: float) -> None:
-        current_state = np.array([self.state["indoor_temperature"], self.state["wall_temperature"]])
-        current_input = np.array([current_external_heating, current_outdoor_temperature])
-        system_step_matrix = expm(self.system_matrix * timestep)
+    def step(self, current_external_heating: float, current_outdoor_temperature: float) -> None:
+        current_state = np.array([self.state["indoor_temperature"], self.state["T2"]])
+        current_input = np.array([current_outdoor_temperature, current_external_heating])
+        system_step_matrix = expm(self.system_matrix * self.timestep)
         input_step_matrix = self.system_matrix_inv @ (system_step_matrix - np.identity(2)) @ self.input_matrix
         new_state = system_step_matrix @ current_state + input_step_matrix @ current_input
-        self.state["indoor_temperature"] = new_state[0]
-        self.state["wall_temperature"] = new_state[1]
+        self.state["indoor_temperature"], self.state["T2"] = new_state
+        self.current_timestep += 1
 
 
 class RCBuilding3R2C(RCBuilding):
